@@ -14,8 +14,8 @@ CREATE TABLE servers (
     ssh_key_path TEXT NOT NULL,
     last_poll_at DATETIME,
     last_error TEXT,
-    created_at DATETIME NOT NULL,
-    updated_at DATETIME NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
 );
 
@@ -26,8 +26,8 @@ CREATE TABLE monitored_files (
     dest_path TEXT NOT NULL,
     repo_rel_path TEXT NOT NULL,
     enabled BOOLEAN NOT NULL,
-    created_at DATETIME NOT NULL,
-    updated_at DATETIME NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UNIQUE (product_id, server_id, dest_path),
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
     FOREIGN KEY (server_id) REFERENCES servers(id) ON DELETE CASCADE
@@ -56,7 +56,7 @@ CREATE TABLE diff_cache (
     remote_hash TEXT NOT NULL,
     diff_text TEXT NOT NULL,
     truncated BOOLEAN NOT NULL,
-    created_at DATETIME NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (monitored_file_id) REFERENCES monitored_files(id) ON DELETE CASCADE
 );
 
@@ -72,7 +72,7 @@ CREATE TABLE audit_log (
     git_commit_sha TEXT,
     result TEXT NOT NULL,
     details TEXT,
-    created_at DATETIME NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (monitored_file_id) REFERENCES monitored_files(id) ON DELETE CASCADE
 );
 

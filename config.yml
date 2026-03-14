@@ -1,3 +1,5 @@
+db_path: "gitoopsoverssh.db"
+
 git:
   repo_path: "gitoops_repo"
   remote: "git@github.com:roshpr/zler-cloud1.git"
