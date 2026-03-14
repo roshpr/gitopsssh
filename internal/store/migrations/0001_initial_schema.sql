@@ -1,9 +1,9 @@
-CREATE TABLE products (
+CREATE TABLE IF NOT EXISTS products (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL
 );
 
-CREATE TABLE servers (
+CREATE TABLE IF NOT EXISTS servers (
     id TEXT PRIMARY KEY,
     product_id TEXT NOT NULL,
     name TEXT NOT NULL,
@@ -19,7 +19,7 @@ CREATE TABLE servers (
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
 );
 
-CREATE TABLE monitored_files (
+CREATE TABLE IF NOT EXISTS monitored_files (
     id TEXT PRIMARY KEY, -- sha256(product_id:server_id:dest)
     product_id TEXT NOT NULL,
     server_id TEXT NOT NULL,
@@ -33,7 +33,7 @@ CREATE TABLE monitored_files (
     FOREIGN KEY (server_id) REFERENCES servers(id) ON DELETE CASCADE
 );
 
-CREATE TABLE file_state (
+CREATE TABLE IF NOT EXISTS file_state (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     monitored_file_id TEXT NOT NULL,
     status TEXT NOT NULL,
@@ -50,7 +50,7 @@ CREATE TABLE file_state (
     FOREIGN KEY (monitored_file_id) REFERENCES monitored_files(id) ON DELETE CASCADE
 );
 
-CREATE TABLE diff_cache (
+CREATE TABLE IF NOT EXISTS diff_cache (
     monitored_file_id TEXT PRIMARY KEY,
     desired_hash TEXT NOT NULL,
     remote_hash TEXT NOT NULL,
@@ -60,7 +60,7 @@ CREATE TABLE diff_cache (
     FOREIGN KEY (monitored_file_id) REFERENCES monitored_files(id) ON DELETE CASCADE
 );
 
-CREATE TABLE audit_log (
+CREATE TABLE IF NOT EXISTS audit_log (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     actor TEXT NOT NULL,
     action TEXT NOT NULL,
@@ -76,6 +76,6 @@ CREATE TABLE audit_log (
     FOREIGN KEY (monitored_file_id) REFERENCES monitored_files(id) ON DELETE CASCADE
 );
 
-CREATE INDEX idx_monitored_files_server ON monitored_files(server_id);
-CREATE INDEX idx_file_state_status ON file_state(status);
-CREATE INDEX idx_audit_server ON audit_log(server_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_monitored_files_server ON monitored_files(server_id);
+CREATE INDEX IF NOT EXISTS idx_file_state_status ON file_state(status);
+CREATE INDEX IF NOT EXISTS idx_audit_server ON audit_log(server_id, created_at);
