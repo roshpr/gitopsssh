@@ -9,7 +9,7 @@ func UpdateFileState(db *sql.DB, state FileState) error {
 	_, err := db.Exec(`
 		INSERT INTO file_states (id, monitored_file_id, status, last_checked_at, diff, error)
 		VALUES (?, ?, ?, ?, ?, ?)
-	`, state.ID, state.MonitoredFileID, state.Status, state.LastCheckedAt, state.Diff, state.Error)
+	`, state.ID, state.MonitoredFileID, state.Status, state.LastCheckedAt, state.Diff.String, state.Error)
 	if err != nil {
 		return fmt.Errorf("failed to insert file state: %w", err)
 	}
