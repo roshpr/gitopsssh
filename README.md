@@ -1,160 +1,78 @@
-# gitoopsOverSsh
+# GitOps over SSH
 
-`gitoopsOverSsh` is a Go-based tool for monitoring file integrity on remote servers. It ensures that files on your servers match the versions stored in a central Git repository.
+This application implements a GitOps workflow over SSH. It periodically polls a set of servers, checks for file content drift, and corrects it.
+
+## Core Functionality
+
+The application performs the following core functions:
+
+*   **Regular Polling:** It polls all configured servers at a regular interval.
+*   **File Content Hashing:** For each monitored file, it calculates the SHA256 hash of the content on the remote server.
+*   **Drift Detection:** It compares the hash of the remote file with the hash of the file in the local Git repository.
+*   **Drift Correction:** If the hashes don't match, it overwrites the remote file with the content from the local Git repository.
+*   **State Logging:** It logs the state of each file (in_sync, drift_detected, drift_corrected, error) to a local SQLite database.
 
 ## Architecture
 
-The application is composed of the following main components:
+The application is composed of the following components:
 
-*   **Poller:** Periodically checks the file integrity on each server.
-*   **Git Manager:** Manages the local clone of the Git repository.
-*   **SSH Client:** Connects to remote servers to check file hashes.
-*   **Store:** A SQLite database that stores the application's state, including servers, monitored files, and file state history.
-*   **HTTP Server:** Provides a simple web-based UI to view the status of monitored files.
+*   **Main Application (`cmd/gitoopsoverssh/main.go`):** The entry point of the application. It initializes the configuration, database, and poller, and starts the HTTP server.
+*   **Configuration (`internal/config/config.go`):** Loads the application configuration from a YAML file (`config.yml`).
+*   **Database (`internal/store/db.go`):** Manages the SQLite database connection and runs schema migrations.
+*   **Git Manager (`internal/git/manager.go`):** Manages the local Git repository, including cloning and pulling updates.
+*   **SSH Client (`internal/ssh/client.go`):** Manages SSH connections to the remote servers.
+*   **Poller (`internal/poller/poller.go`):** The core of the application. It orchestrates the polling process, including drift detection and correction.
+*   **HTTP Server (`internal/http/server.go`):** Exposes an API for querying the status of the monitored files.
 
-## Code Structure
+## Code Flow
 
-The project is organized into the following packages:
+The following steps describe a single polling cycle:
 
-*   **`cmd/gitoopsoverssh`**: The main application entry point. This is where the application is initialized and the various components are wired together.
+1.  **The `Poll` function in `internal/poller/poller.go` is called.**
+2.  **The poller retrieves a list of all servers from the database.**
+3.  **For each server, the poller retrieves a list of all monitored files.**
+4.  **For each monitored file, the poller performs the following steps:**
+    *   It establishes an SSH connection to the remote server.
+    *   It calculates the SHA256 hash of the remote file.
+    *   It retrieves the content of the file from the local Git repository.
+    *   It calculates the SHA256 hash of the local file.
+    *   It compares the two hashes.
+    *   If the hashes are different, it overwrites the remote file with the content of the local file.
+    *   It updates the file state in the database.
 
-*   **`internal/config`**: Handles the loading and parsing of the `config.yml` file. It defines the structs that hold the application's configuration.
+## Configuration
 
-*   **`internal/git`**: Manages the local clone of the Git repository. It includes a `Cloner` to initially clone the repository and a `Manager` to keep it up-to-date.
+The application is configured using a YAML file (`config.yml`). The following options are available:
 
-*   **`internal/http`**: Implements the web-based UI. It provides an HTTP server that displays the status of monitored files.
+*   **`repo_url`:** The URL of the Git repository to clone.
+*   **`repo_path`:** The local path where the Git repository will be cloned.
+*   **`ssh_key_path`:** The path to the SSH private key to use for cloning the Git repository.
+*   **`poll_interval_seconds`:** The interval at which to poll the servers.
+*   **`servers`:** A list of servers to poll. Each server has the following properties:
+    *   **`name`:** The name of the server.
+    *   **`host`:** The hostname or IP address of the server.
+    *   **`port`:** The SSH port of the server.
+    *   **`user`:** The SSH user to use for connecting to the server.
+    *   **`ssh_key_path`:** The path to the SSH private key to use for connecting to the server.
+    *   **`files`:** A list of files to monitor on the server. Each file has the following properties:
+        *   **`repo_path`:** The path to the file in the Git repository.
+        *   **`remote_path`:** The path to the file on the remote server.
 
-*   **`internal/poller`**: The core logic of the application. The `Poller` is responsible for periodically connecting to servers, checking file hashes, and updating the database with the results.
+## Database
 
-*   **`internal/ssh`**: Provides an SSH client for connecting to remote servers and executing commands. It is used by the `Poller` to get file hashes from the servers.
+The application uses a SQLite database to store the state of the monitored files. The database schema is defined in `internal/store/migrations/0001_initial_schema.sql`.
 
-*   **`internal/store`**: Manages the SQLite database. It includes the database schema migrations, the data models, and repositories for interacting with the database.
+The following tables are used:
 
-## What we are doing
+*   **`servers`:** Stores the configuration of the servers to poll.
+*   **`monitored_files`:** Stores the configuration of the files to monitor.
+*   **`file_states`:** Stores the state of each monitored file.
 
-`gitoopsOverSsh` addresses the problem of configuration drift in a server infrastructure. It ensures that the files on your servers are in the desired state, as defined by a Git repository. This is achieved by:
+## Getting Started
 
-1.  **Cloning a Git repository:** The application maintains a local clone of a Git repository that contains the desired state of your monitored files.
-2.  **Polling servers:** It periodically connects to each configured server via SSH.
-3.  **Comparing file hashes:** For each monitored file, it calculates the hash of the local version (from the Git repository) and the remote version (on the server). 
-4.  **Reporting status:** If the hashes don't match, the file is marked as "drifted." The status of all monitored files is displayed in a web UI.
+To build and run the application, follow these steps:
 
-## How to set up the environment
-
-### Development
-
-1.  **Install Go:** Make sure you have Go installed and configured on your system.
-2.  **Install SQLite:** `gitoopsOverSsh` uses SQLite as its database. Install it using your system's package manager:
-    ```bash
-    sudo apt-get update && sudo apt-get install -y sqlite3
-    ```
-3.  **Configure `config.yml`:** See the `config.yml` details section below.
-4.  **Run the application:**
-    ```bash
-    CGO_ENABLED=1 go run cmd/gitoopsoverssh/main.go
-    ```
-
-### Development with Docker and Make
-
-For a more streamlined development experience, you can use the provided `Makefile` and `Dockerfile`.
-
-#### Building and Running with Make
-
-The `Makefile` provides several useful commands:
-
-*   `make build`: Compiles your application.
-*   `make run`: Runs the compiled application.
-*   `make clean`: Removes the compiled application binary.
-*   `make docker-build`: Builds the Docker image for the application.
-*   `make docker-run`: Runs the application inside a Docker container.
-*   `make help`: Displays a list of all available commands.
-
-For more details on the available commands, you can run `make help`.
-
-#### Building and Running with Docker
-
-The `Dockerfile` allows you to build and run the application in a containerized environment.
-
-1.  **Build the Docker image:**
-    ```bash
-    make docker-build
-    ```
-2.  **Run the Docker container:**
-    ```bash
-    make docker-run
-    ```
-    This will start the application and expose the web UI on port 8080 of your host machine.
-
-**Note:** The `Dockerfile` assumes that your main Go source file is located at `cmd/gitoopsoverssh/main.go`. If this is not the case, you will need to update the `Dockerfile` and `Makefile` accordingly. It also copies the `config.yml` file and the `internal/store/migrations` directory, so make sure they exist before building the docker image.
-
-### Deployment
-
-1.  **Build the binary:**
-    ```bash
-    CGO_ENABLED=1 go build -o gitoopsoverssh cmd/gitoopsoverssh/main.go
-    ```
-2.  **Deploy the binary and `config.yml`:** Copy the `gitoopsoverssh` binary and your `config.yml` file to your server.
-3.  **Run the application:**
-    ```bash
-    ./gitoopsoverssh
-    ```
-
-## How to view the UI
-
-Once the application is running, you can view the UI by opening your web browser and navigating to `http://localhost:8080` (or the appropriate address if you're running it on a remote server).
-
-## `config.yml` details
-
-The `config.yml` file is the central configuration for the application. Here's a breakdown of its structure:
-
-```yaml
-git:
-  remote: "https://github.com/user/repo.git"
-  branch: "main"
-  repoPath: "/tmp/gitoops_repo"
-  refreshIntervalSeconds: 300
-
-polling:
-  intervalSeconds: 60
-  maxConcurrency: 10
-
-products:
-  - id: "product-a"
-    name: "Product A"
-    global:
-      sshKeyPath: "/path/to/your/ssh/key"
-    servers:
-      - id: "server-1"
-        name: "Server 1"
-        host: "1.2.3.4"
-        port: 22
-        user: "user"
-        sudo: true
-    files:
-      - dest: "/etc/nginx/nginx.conf"
-        repoRelPath: "nginx/nginx.conf"
-```
-
-*   **`git`:** Configures the Git repository to be monitored.
-    *   `remote`: The URL of the Git repository.
-    *   `branch`: The branch to be monitored.
-    *   `repoPath`: The local path where the repository will be cloned.
-    *   `refreshIntervalSeconds`: How often to pull the latest changes from the remote repository.
-*   **`polling`:** Configures the file polling behavior.
-    *   `intervalSeconds`: How often to check the file integrity on each server.
-    *   `maxConcurrency`: The maximum number of servers to poll concurrently.
-*   **`products`:** A list of products, each with its own set of servers and files to be monitored.
-    *   `id`: A unique identifier for the product.
-    *   `name`: A human-readable name for the product.
-    *   `global`: Global settings for the product.
-        *   `sshKeyPath`: The default path to the SSH key to be used for all servers in this product.
-    *   `servers`: A list of servers to be monitored for this product.
-        *   `id`: A unique identifier for the server.
-        *   `name`: A human-readable name for the server.
-        *   `host`: The hostname or IP address of the server.
-        *   `port`: The SSH port on the server.
-        *   `user`: The SSH user.
-        *   `sudo`: Whether to use `sudo` when checking file hashes.
-    *   `files`: A list of files to be monitored for this product.
-        *   `dest`: The absolute path to the file on the remote server.
-        *   `repoRelPath`: The relative path to the file in the Git repository.
+1.  **Clone the repository.**
+2.  **Install the dependencies:** `go mod download`
+3.  **Create a `config.yml` file.**
+4.  **Run the application:** `go run cmd/gitoopsoverssh/main.go`

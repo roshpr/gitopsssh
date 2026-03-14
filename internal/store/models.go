@@ -22,7 +22,7 @@ type MonitoredFile struct {
 }
 
 type FileState struct {
-	ID              string
+	ID              int64
 	MonitoredFileID string
 	Status          string
 	LastCheckedAt   string
