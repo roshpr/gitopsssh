@@ -2,21 +2,25 @@ package ssh
 
 import (
 	"fmt"
-	"io/ioutil"
+	"log"
+	"os"
+	"strings"
 	"time"
 
 	"golang.org/x/crypto/ssh"
 )
 
 func NewClient(host string, port int, user, keyPath string) (*ssh.Client, error) {
-	key, err := ioutil.ReadFile(keyPath)
+	log.Printf("Attempting to use SSH key at path: %s for user %s@%s:%d", keyPath, user, host, port)
+
+	key, err := os.ReadFile(keyPath)
 	if err != nil {
-		return nil, fmt.Errorf("unable to read private key: %w", err)
+		return nil, fmt.Errorf("unable to read private key from %s: %w", keyPath, err)
 	}
 
 	signer, err := ssh.ParsePrivateKey(key)
 	if err != nil {
-		return nil, fmt.Errorf("unable to parse private key: %w", err)
+		return nil, fmt.Errorf("unable to parse private key from %s. If the key is passphrase-protected, this is not supported: %w", keyPath, err)
 	}
 
 	config := &ssh.ClientConfig{
@@ -29,11 +33,13 @@ func NewClient(host string, port int, user, keyPath string) (*ssh.Client, error)
 	}
 
 	addr := fmt.Sprintf("%s:%d", host, port)
+	log.Printf("Connecting to SSH server at %s", addr)
 	client, err := ssh.Dial("tcp", addr, config)
 	if err != nil {
-		return nil, fmt.Errorf("unable to connect: %w", err)
+		return nil, fmt.Errorf("unable to connect to %s: %w", addr, err)
 	}
 
+	log.Printf("Successfully connected to SSH server at %s", addr)
 	return client, nil
 }
 
@@ -57,20 +63,10 @@ func GetFileHash(client *ssh.Client, path string, sudo bool) (string, error) {
 	}
 
 	// The output of sha256sum is in the format "<hash>  <filename>"
-	parts := split(string(output), " ")
+	parts := strings.Fields(string(output))
 	if len(parts) > 0 {
 		return parts[0], nil
 	}
 
 	return "", fmt.Errorf("unexpected output from sha256sum: %s", output)
-}
-
-func split(s, sep string) []string {
-	var result []string
-	for _, part := range s {
-		if string(part) != sep {
-			result = append(result, string(part))
-		}
-	}
-	return result
 }
