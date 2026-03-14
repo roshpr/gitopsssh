@@ -82,6 +82,22 @@ func pollServer(db *sql.DB, cfg *config.Config, server store.Server) error {
 			LastCheckedAt:   time.Now().UTC().Format(time.RFC3339Nano),
 		}
 
+		isFile, err := ssh.IsFile(sshClient, file.DestPath, server.Sudo)
+		if err != nil {
+			log.Printf("Error checking if %s is a file: %v", file.DestPath, err)
+			state.Status = "error"
+			state.Error = sql.NullString{String: err.Error(), Valid: true}
+			if err := store.UpdateFileState(db, state); err != nil {
+				log.Printf("Error updating file state: %v", err)
+			}
+			continue
+		}
+
+		if !isFile {
+			log.Printf("Path %s is not a file, skipping hash check", file.DestPath)
+			continue
+		}
+
 		desiredHash, err := gitManager.GetFileHash(file.RepoRelPath)
 		if err != nil {
 			log.Printf("Error getting desired hash for %s: %v", file.RepoRelPath, err)

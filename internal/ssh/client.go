@@ -43,6 +43,32 @@ func NewClient(host string, port int, user, keyPath string) (*ssh.Client, error)
 	return client, nil
 }
 
+func IsFile(client *ssh.Client, path string, sudo bool) (bool, error) {
+    var cmd string
+    if sudo {
+        cmd = fmt.Sprintf("sudo test -f %s", path)
+    } else {
+        cmd = fmt.Sprintf("test -f %s", path)
+    }
+
+    session, err := client.NewSession()
+    if err != nil {
+        return false, fmt.Errorf("failed to create session: %w", err)
+    }
+    defer session.Close()
+
+    err = session.Run(cmd)
+    if err != nil {
+        if _, ok := err.(*ssh.ExitError); ok {
+            // The command returns a non-zero exit status if the path is not a file.
+            return false, nil
+        }
+        return false, fmt.Errorf("failed to run command: %w", err)
+    }
+
+    return true, nil
+}
+
 func GetFileHash(client *ssh.Client, path string, sudo bool) (string, error) {
 	var cmd string
 	if sudo {
