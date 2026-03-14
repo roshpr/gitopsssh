@@ -1,0 +1,42 @@
+git:
+  repo_path: "gitoops_repo"
+  remote: "git@github.com:roshpr/zler-cloud1.git"
+  branch: "main"
+  refresh_interval_seconds: 300
+
+polling:
+  interval_seconds: 60
+  max_concurrency: 20
+  per_server_concurrency: 1
+  ssh_timeout_seconds: 10
+  diff_max_bytes: 200000
+  content_max_bytes: 5000000
+  diff_cache_ttl_seconds: 600
+
+products:
+  - id: "zia"
+    name: "ZIA"
+    global:
+      ssh_key_path: "keys/first.key"
+      files:
+        - dest: "/etc/motd"
+
+    servers:
+      - id: "44.249.165.118"
+        name: "gitops1"
+        host: "44.249.165.118"
+        port: 22
+        user: "ubuntu"
+        sudo: false
+        files:
+          - dest: "/etc/motd"
+            repo_rel_path: "products/zia/servers/44.249.165.118/files/etc/motd"
+      - id: "34.217.30.192"
+        name: "gitops2"
+        host: "34.217.30.192"
+        port: 22
+        user: "ubuntu"
+        sudo: false
+        ssh_key_path: "keys/second.key" # This server uses a different key
+        exclude_files:
+          - "/etc/motd"
