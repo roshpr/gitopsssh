@@ -1,7 +1,9 @@
 package ssh
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"strings"
@@ -44,29 +46,74 @@ func NewClient(host string, port int, user, keyPath string) (*ssh.Client, error)
 }
 
 func IsFile(client *ssh.Client, path string, sudo bool) (bool, error) {
-    var cmd string
-    if sudo {
-        cmd = fmt.Sprintf("sudo test -f %s", path)
-    } else {
-        cmd = fmt.Sprintf("test -f %s", path)
-    }
+	var cmd string
+	if sudo {
+		cmd = fmt.Sprintf("sudo test -f %s", path)
+	} else {
+		cmd = fmt.Sprintf("test -f %s", path)
+	}
 
-    session, err := client.NewSession()
-    if err != nil {
-        return false, fmt.Errorf("failed to create session: %w", err)
-    }
-    defer session.Close()
+	session, err := client.NewSession()
+	if err != nil {
+		return false, fmt.Errorf("failed to create session: %w", err)
+	}
+	defer session.Close()
 
-    err = session.Run(cmd)
-    if err != nil {
-        if _, ok := err.(*ssh.ExitError); ok {
-            // The command returns a non-zero exit status if the path is not a file.
-            return false, nil
-        }
-        return false, fmt.Errorf("failed to run command: %w", err)
-    }
+	err = session.Run(cmd)
+	if err != nil {
+		if _, ok := err.(*ssh.ExitError); ok {
+			// The command returns a non-zero exit status if the path is not a file.
+			return false, nil
+		}
+		return false, fmt.Errorf("failed to run command: %w", err)
+	}
 
-    return true, nil
+	return true, nil
+}
+
+func GetFileContent(client *ssh.Client, path string, sudo bool) ([]byte, error) {
+	var cmd string
+	if sudo {
+		cmd = fmt.Sprintf("sudo cat %s", path)
+	} else {
+		cmd = fmt.Sprintf("cat %s", path)
+	}
+
+	session, err := client.NewSession()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create session: %w", err)
+	}
+	defer session.Close()
+
+	output, err := session.Output(cmd)
+	if err != nil {
+		return nil, fmt.Errorf("failed to run command: %w", err)
+	}
+
+	return output, nil
+}
+
+func WriteFile(client *ssh.Client, path string, content []byte, sudo bool) error {
+	var cmd string
+	if sudo {
+		cmd = fmt.Sprintf("sudo tee %s > /dev/null", path)
+	} else {
+		cmd = fmt.Sprintf("tee %s > /dev/null", path)
+	}
+
+	session, err := client.NewSession()
+	if err != nil {
+		return fmt.Errorf("failed to create session: %w", err)
+	}
+	defer session.Close()
+
+	session.Stdin = bytes.NewReader(content)
+
+	if err := session.Run(cmd); err != nil {
+		return fmt.Errorf("failed to run command: %w", err)
+	}
+
+	return nil
 }
 
 func GetFileHash(client *ssh.Client, path string, sudo bool) (string, error) {

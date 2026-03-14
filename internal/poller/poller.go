@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"mymodule/internal/config"
 	"mymodule/internal/git"
 	"mymodule/internal/ssh"
@@ -121,8 +122,32 @@ func pollServer(db *sql.DB, cfg *config.Config, server store.Server) error {
 		}
 
 		if desiredHash != remoteHash {
+			log.Printf("Drift detected for %s on %s", file.DestPath, server.Name)
 			state.Status = "drifted"
-			// TODO: Generate and store diff
+
+			desiredContent, err := gitManager.GetFileContent(file.RepoRelPath)
+			if err != nil {
+				log.Printf("Error getting desired content for %s: %v", file.RepoRelPath, err)
+				state.Error = sql.NullString{String: err.Error(), Valid: true}
+			} else {
+				remoteContent, err := ssh.GetFileContent(sshClient, file.DestPath, server.Sudo)
+				if err != nil {
+					log.Printf("Error getting remote content for %s: %v", file.DestPath, err)
+					state.Error = sql.NullString{String: err.Error(), Valid: true}
+				} else {
+					diff := cmp.Diff(string(remoteContent), string(desiredContent))
+					state.Diff = sql.NullString{String: diff, Valid: true}
+
+					log.Printf("Attempting to correct drift for %s on %s", file.DestPath, server.Name)
+					if err := ssh.WriteFile(sshClient, file.DestPath, desiredContent, server.Sudo); err != nil {
+						log.Printf("Error correcting drift for %s on %s: %v", file.DestPath, server.Name, err)
+						state.Error = sql.NullString{String: fmt.Sprintf("Drift correction failed: %v", err), Valid: true}
+					} else {
+						log.Printf("Successfully corrected drift for %s on %s", file.DestPath, server.Name)
+						state.Status = "in_sync"
+					}
+				}
+			}
 		} else {
 			state.Status = "in_sync"
 		}
