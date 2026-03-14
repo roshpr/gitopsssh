@@ -98,7 +98,7 @@ func pollServer(db *sql.DB, cfg *config.Config, server store.Server) error {
 			log.Printf("Error getting remote hash for %s on %s: %v", file.DestPath, server.Name, err)
 			state.Status = "error"
 			state.Error = sql.NullString{String: err.Error(), Valid: true}
-			if err := store.UpdateFileFileState(db, state); err != nil {
+			if err := store.UpdateFileState(db, state); err != nil {
 				log.Printf("Error updating file state: %v", err)
 			}
 			continue
