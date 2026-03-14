@@ -30,6 +30,8 @@ products:
         port: 22
         user: "ubuntu"
         sudo: false
+        exclude_files:
+          - "/etc/motd"        
         files:
           - dest: "/etc/motd"
             repo_rel_path: "products/zia/servers/44.249.165.118/files/etc/motd"

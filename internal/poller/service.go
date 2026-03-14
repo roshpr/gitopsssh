@@ -1,7 +1,6 @@
 package poller
 
 import (
-	"fmt"
 	"log"
 	"time"
 
@@ -26,7 +25,7 @@ func (s *Service) Start() {
 	defer ticker.Stop()
 
 	for range ticker.C {
-		log.Println("Polling servers...")
+		log.Println("Polling all servers...")
 
 		servers, err := s.serverRepo.GetEnabledServers()
 		if err != nil {
@@ -35,10 +34,11 @@ func (s *Service) Start() {
 		}
 
 		for _, server := range servers {
-			fmt.Printf("Server: %s (%s:%d)\n", server.Name, server.Host, server.Port)
+			log.Printf("Polling server: %s", server.Name)
 			for _, file := range server.MonitoredFiles {
-				fmt.Printf("  - Monitored File: %s\n", file.DestPath)
+				log.Printf("  - Refreshing file: %s", file.DestPath)
 			}
 		}
+		log.Println("Polling finished.")
 	}
 }

@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS monitored_files (
     FOREIGN KEY (server_id) REFERENCES servers(id) ON DELETE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS file_state (
+CREATE TABLE IF NOT EXISTS file_states (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     monitored_file_id TEXT NOT NULL,
     status TEXT NOT NULL,
@@ -77,5 +77,5 @@ CREATE TABLE IF NOT EXISTS audit_log (
 );
 
 CREATE INDEX IF NOT EXISTS idx_monitored_files_server ON monitored_files(server_id);
-CREATE INDEX IF NOT EXISTS idx_file_state_status ON file_state(status);
+CREATE INDEX IF NOT EXISTS idx_file_state_status ON file_states(status);
 CREATE INDEX IF NOT EXISTS idx_audit_server ON audit_log(server_id, created_at);
