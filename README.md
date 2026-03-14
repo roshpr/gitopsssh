@@ -64,6 +64,35 @@ The application is composed of the following main components:
     CGO_ENABLED=1 go run cmd/gitoopsoverssh/main.go
     ```
 
+### Development with Docker and Make
+
+For a more streamlined development experience, you can use the provided `Makefile` and `Dockerfile`.
+
+#### Building and Running with Make
+
+The `Makefile` provides several useful commands:
+
+*   `make build`: Compiles your application.
+*   `make run`: Runs the compiled application.
+*   `make clean`: Removes the compiled application binary.
+*   `make help`: Displays a list of all available commands.
+
+#### Building and Running with Docker
+
+The `Dockerfile` allows you to build and run the application in a containerized environment.
+
+1.  **Build the Docker image:**
+    ```bash
+    make docker-build
+    ```
+2.  **Run the Docker container:**
+    ```bash
+    make docker-run
+    ```
+    This will start the application and expose the web UI on port 8080 of your host machine.
+
+**Note:** The `Dockerfile` assumes that your main Go source file is located at `cmd/gitoopsoverssh/main.go`. If this is not the case, you will need to update the `Dockerfile` and `Makefile` accordingly. It also copies the `config.yml` file and the `internal/store/migrations` directory, so make sure they exist before building the docker image.
+
 ### Deployment
 
 1.  **Build the binary:**
