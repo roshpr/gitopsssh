@@ -25,7 +25,7 @@ CREATE TABLE monitored_files (
     server_id TEXT NOT NULL,
     dest_path TEXT NOT NULL,
     repo_rel_path TEXT NOT NULL,
-    enabled BOOLEAN NOT NULL,
+    enabled BOOLEAN NOT NULL DEFAULT 1,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UNIQUE (product_id, server_id, dest_path),
