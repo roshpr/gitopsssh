@@ -14,31 +14,21 @@ The application is composed of the following main components:
 
 ## Code Structure
 
-```
-.
-├── cmd
-│   └── gitoopsoverssh
-│       └── main.go         # Main application entry point
-├── internal
-│   ├── config
-│   │   └── config.go       # Configuration loading
-│   ├── git
-│   │   ├── cloner.go       # Git repository cloning
-│   │   └── manager.go      # Git repository management
-│   ├── http
-│   │   └── server.go       # HTTP server and UI
-│   ├── poller
-│   │   └── poller.go       # File integrity polling logic
-│   ├── ssh
-│   │   └── client.go       # SSH client for remote commands
-│   └── store
-│       ├── db.go           # Database initialization and migrations
-│       ├── files_repo.go   # Monitored file repository
-│       ├── models.go       # Database models
-│       └── server_repo.go  # Server repository
-├── config.yml              # Application configuration
-└── README.md
-```
+The project is organized into the following packages:
+
+*   **`cmd/gitoopsoverssh`**: The main application entry point. This is where the application is initialized and the various components are wired together.
+
+*   **`internal/config`**: Handles the loading and parsing of the `config.yml` file. It defines the structs that hold the application's configuration.
+
+*   **`internal/git`**: Manages the local clone of the Git repository. It includes a `Cloner` to initially clone the repository and a `Manager` to keep it up-to-date.
+
+*   **`internal/http`**: Implements the web-based UI. It provides an HTTP server that displays the status of monitored files.
+
+*   **`internal/poller`**: The core logic of the application. The `Poller` is responsible for periodically connecting to servers, checking file hashes, and updating the database with the results.
+
+*   **`internal/ssh`**: Provides an SSH client for connecting to remote servers and executing commands. It is used by the `Poller` to get file hashes from the servers.
+
+*   **`internal/store`**: Manages the SQLite database. It includes the database schema migrations, the data models, and repositories for interacting with the database.
 
 ## What we are doing
 
@@ -75,7 +65,11 @@ The `Makefile` provides several useful commands:
 *   `make build`: Compiles your application.
 *   `make run`: Runs the compiled application.
 *   `make clean`: Removes the compiled application binary.
+*   `make docker-build`: Builds the Docker image for the application.
+*   `make docker-run`: Runs the application inside a Docker container.
 *   `make help`: Displays a list of all available commands.
+
+For more details on the available commands, you can run `make help`.
 
 #### Building and Running with Docker
 
