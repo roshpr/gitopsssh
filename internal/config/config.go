@@ -50,7 +50,7 @@ type ServerConfig struct {
 	Port         int          `yaml:"port"`
 	User         string       `yaml:"user"`
 	SSHKeyPath   string       `yaml:"ssh_key_path"`
-	Sudo         bool         `yaml:"sudo"`
+	Sudo         bool         `yaml:t"sudo"`
 	ExcludeFiles []string     `yaml:"exclude_files"`
 	Files        []FileConfig `yaml:"files"`
 }
@@ -126,4 +126,35 @@ func (c *Config) GetEffectiveFiles(productID, serverID string) ([]FileConfig, er
 	}
 
 	return result, nil
+}
+
+func (c *Config) GetServerConfig(productID, serverID string) (*ServerConfig, error) {
+	var product *ProductConfig
+	for i := range c.Products {
+		if c.Products[i].ID == productID {
+			product = &c.Products[i]
+			break
+		}
+	}
+	if product == nil {
+		return nil, fmt.Errorf("product not found: %s", productID)
+	}
+
+	var server *ServerConfig
+	for i := range product.Servers {
+		if product.Servers[i].ID == serverID {
+			server = &product.Servers[i]
+			break
+		}
+	}
+	if server == nil {
+		return nil, fmt.Errorf("server not found: %s for product %s", serverID, productID)
+	}
+
+	// If the server doesn't have a specific key path, use the global one.
+	if server.SSHKeyPath == "" {
+		server.SSHKeyPath = product.Global.SSHKeyPath
+	}
+
+	return server, nil
 }

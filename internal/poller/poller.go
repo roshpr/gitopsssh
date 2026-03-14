@@ -55,12 +55,17 @@ func Poll(ctx context.Context, cfg *config.Config, db *sql.DB) {
 }
 
 func pollServer(db *sql.DB, cfg *config.Config, server store.Server) error {
+	serverConfig, err := cfg.GetServerConfig(server.ProductID, server.ID)
+	if err != nil {
+		return fmt.Errorf("failed to get server config: %w", err)
+	}
+
 	files, err := store.GetMonitoredFilesForServer(db, server.ProductID, server.ID)
 	if err != nil {
 		return fmt.Errorf("failed to get monitored files: %w", err)
 	}
 
-	sshClient, err := ssh.NewClient(server.Host, server.Port, server.User, server.SSHKeyPath)
+	sshClient, err := ssh.NewClient(server.Host, server.Port, server.User, serverConfig.SSHKeyPath)
 	if err != nil {
 		return fmt.Errorf("failed to create ssh client: %w", err)
 	}
@@ -93,7 +98,7 @@ func pollServer(db *sql.DB, cfg *config.Config, server store.Server) error {
 			log.Printf("Error getting remote hash for %s on %s: %v", file.DestPath, server.Name, err)
 			state.Status = "error"
 			state.Error = sql.NullString{String: err.Error(), Valid: true}
-			if err := store.UpdateFileState(db, state); err != nil {
+			if err := store.UpdateFileFileState(db, state); err != nil {
 				log.Printf("Error updating file state: %v", err)
 			}
 			continue
@@ -109,7 +114,7 @@ func pollServer(db *sql.DB, cfg *config.Config, server store.Server) error {
 		log.Printf("File %s on server %s is %s", file.DestPath, server.Name, state.Status)
 
 		if err := store.UpdateFileState(db, state); err != nil {
-			log.Printf("Error updating file state: %v", err)
+				log.Printf("Error updating file state: %v", err)
 		}
 	}
 
