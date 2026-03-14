@@ -78,7 +78,6 @@ func pollServer(db *sql.DB, cfg *config.Config, server store.Server) error {
 		log.Printf("Checking file: %s on server %s", file.DestPath, server.Name)
 
 		state := store.FileState{
-			ID:              fmt.Sprintf("%s:%s", file.ID, time.Now().UTC().Format(time.RFC3339Nano)),
 			MonitoredFileID: file.ID,
 			LastCheckedAt:   time.Now().UTC().Format(time.RFC3339Nano),
 		}
