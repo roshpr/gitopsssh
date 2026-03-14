@@ -1,10 +1,10 @@
 # Build stage
-FROM golang:1.22-alpine AS builder
+FROM golang:1.22 AS builder
 
 WORKDIR /app
 
 # Install build dependencies
-RUN apk add --no-cache gcc musl-dev sqlite
+RUN apt-get update && apt-get install -y gcc libsqlite3-dev
 
 # Copy go.mod and go.sum and download dependencies
 COPY go.mod go.sum ./
@@ -18,12 +18,14 @@ COPY . .
 RUN CGO_ENABLED=1 go build -o gitoopsoverssh cmd/gitoopsoverssh/main.go
 
 # Final stage
-FROM alpine:latest
+FROM debian:12-slim
 
 WORKDIR /root/
 
-# Install runtime dependencies
-RUN apk add --no-cache sqlite
+# Install runtime dependencies and clean up to reduce image size
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends sqlite3 && \
+    rm -rf /var/lib/apt/lists/*
 
 # Copy the binary from the builder stage
 COPY --from=builder /app/gitoopsoverssh .
