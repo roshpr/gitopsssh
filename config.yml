@@ -25,16 +25,16 @@ products:
 
     servers:
       - id: "44.249.165.118"
-        name: "gitops1"
+        name: "server1"
         host: "44.249.165.118"
         port: 22
         user: "ubuntu"
         sudo: false
         exclude_files:
-          - "/etc/motd"        
+          - "/etc/motd"
         files:
-          - dest: "/etc/motd"
-            repo_rel_path: "products/zia/servers/44.249.165.118/files/etc/motd"
+          - dest: "/home/ubuntu/sshd_config"
+            repo_rel_path: "product1/server1/home/ubuntu/sshd_config"
       - id: "34.217.30.192"
         name: "gitops2"
         host: "34.217.30.192"
@@ -42,5 +42,8 @@ products:
         user: "ubuntu"
         sudo: false
         ssh_key_path: "keys/second.key" # This server uses a different key
+        files:
+          - dest: "/home/ubuntu/sshd_config"
+            repo_rel_path: "product1/server2/home/ubuntu/sshd_config"
         exclude_files:
           - "/etc/motd"
