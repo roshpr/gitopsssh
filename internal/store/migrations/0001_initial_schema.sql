@@ -46,7 +46,8 @@ CREATE TABLE IF NOT EXISTS file_states (
     remote_group TEXT,
     last_checked_at DATETIME NOT NULL,
     last_drift_at DATETIME,
-    error_text TEXT,
+    error TEXT,
+    diff TEXT,
     FOREIGN KEY (monitored_file_id) REFERENCES monitored_files(id) ON DELETE CASCADE
 );
 

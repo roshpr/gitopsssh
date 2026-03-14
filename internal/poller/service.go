@@ -33,6 +33,11 @@ func (s *Service) Start() {
 			continue
 		}
 
+		if len(servers) == 0 {
+			log.Println("No servers to poll.")
+			continue
+		}
+
 		for _, server := range servers {
 			log.Printf("Polling server: %s", server.Name)
 			for _, file := range server.MonitoredFiles {
